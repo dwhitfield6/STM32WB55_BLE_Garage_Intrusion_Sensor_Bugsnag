@@ -63,6 +63,23 @@ Run `npm start` (or `npm run crash`). The script intentionally throws a `GARAGE_
 
 When the upload succeeds the process exits with code `1`, mirroring a firmware crash exit path. Missing environment variables are reported up front so you can fix configuration issues before running again.
 
+## What You See in Bugsnag
+
+Once a crash lands in Bugsnag, each tab is already pre-populated so reviewers can triage without hunting for artifacts:
+
+- **Device tab** – Sets `app_version=520b`, `chip_id=stm32wb55rg`, `coredump_version=1`, `cpu=CPU_1`, `firmware=52..0b`, `hw_id=123456789`, `manufacturer=David`, `model=Guide`, `serial number=123456789`, `type=Errors::Watchdog`, plus `RTOS=FreeRTOS 10.3` and `country_code=US`.
+- **User tab** – Uses the fixed `id=123456789` / `name=987654321` pairing so alerts are easy to spot, while `sensor_user_mapping` metadata records the originating sensor ID for traceability.
+- **Metadata tabs** – Expandable cards summarize everything pulled from the simulated coredump:
+	- `diagnostics`: watchdog window, BLE RSSI, heartbeat timestamp, and crash label.
+	- `stats`: `app_protocol`, `comms_channel`, `crash_timestamp`, `watchdog_fired`.
+	- `registers`: Cortex-M4 snapshot (core registers, SP/LR/PC/PSR) sourced from [`Artifacts/coredump/gdb_coredump.bin`](Artifacts/coredump/gdb_coredump.bin).
+	- `threads`: Clickable tables for every thread captured in the coredump, including state, stack usage, registers, syscalls, and backtraces.
+	- `tasks`: Mirrors the thread tables plus the legacy task list for dashboards that still expect the old shape.
+	- `tasklog` / `eventlog`: Recent timeline entries so you can correlate the crash to the BLE/intrusion flow.
+	- `attachments`: Click-to-download ZIPs pointing at `Artifacts/*.zip` (or your hosted bundle via `CRASH_ARCHIVE_URL`).
+
+These defaults live in `src/index.js`. Update the `CORE_DUMP_THREAD_SNAPSHOTS`, `buildRegisterSnapshot`, or any metadata helpers if you capture a new coredump and want the UI to stay in lockstep with real hardware.
+
 ## Customizing
 
 - Override `NODE_ENV`, `SENSOR_ID`, or `FIRMWARE_VERSION` in `.env` to match staged hardware
