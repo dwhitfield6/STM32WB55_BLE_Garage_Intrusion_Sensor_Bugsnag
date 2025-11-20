@@ -109,9 +109,8 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
   event.addMetadata('registers', buildRegisterSnapshot());
 
   event.addMetadata('tasklog', {
-    entries: buildTaskLogEntries(),
-    lastCommand: 'tasklog stuff',
-    source: buildRemoteAttachment('Artifacts/tasklog/SYSVIEW_FreeRTOS.txt')
+    systemViewTrace: buildRemoteAttachment('Artifacts/tasklog/SYSVIEW_FreeRTOS.txt'),
+    switches: buildTaskSwitchEntries()
   });
 
   event.addMetadata('eventlog', {
@@ -129,7 +128,9 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
 
   event.addMetadata('tasks', {
     capturedFrom: buildRemoteAttachment('Artifacts/gdb_coredump.zip'),
-    note: 'Expand each task row for register, stack, and backtrace details.',
+    threadDump: buildRemoteAttachment('Artifacts/gdb_coredump/thread_apply_all_bt.txt'),
+    gdbCommand: 'thread apply all bt',
+    note: 'Expand each task row for register, stack, and backtrace details derived from the latest GDB dump.',
     ...detailedTaskTables
   });
 
@@ -138,14 +139,91 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
   }
 }
 
-function buildTaskLogEntries() {
+const TASK_SWITCH_PATTERN = [
+  {
+    from: 'prvIdleTask',
+    to: 'HeartbeatTaskMain',
+    runtimeUs: 180,
+    latencyUs: 12,
+    cpu: 8.5,
+    reason: 'Heartbeat tick broadcast'
+  },
+  {
+    from: 'HeartbeatTaskMain',
+    to: 'PulseDensityMain',
+    runtimeUs: 240,
+    latencyUs: 18,
+    cpu: 14.2,
+    reason: 'Hall sensor pulse processing'
+  },
+  {
+    from: 'PulseDensityMain',
+    to: 'SendCommandsMain',
+    runtimeUs: 310,
+    latencyUs: 22,
+    cpu: 21.6,
+    reason: 'Console script TX window'
+  },
+  {
+    from: 'SendCommandsMain',
+    to: 'SongPlay',
+    runtimeUs: 150,
+    latencyUs: 10,
+    cpu: 11.2,
+    reason: 'Siren wavetable playback'
+  },
+  {
+    from: 'SongPlay',
+    to: 'BLE_AppTask',
+    runtimeUs: 205,
+    latencyUs: 14,
+    cpu: 16.4,
+    reason: 'BLE link keep-alive'
+  },
+  {
+    from: 'BLE_AppTask',
+    to: 'HciUserEvtProcess',
+    runtimeUs: 270,
+    latencyUs: 19,
+    cpu: 19.7,
+    reason: 'HCI event fanout'
+  },
+  {
+    from: 'HciUserEvtProcess',
+    to: 'AdvUpdateProcess',
+    runtimeUs: 230,
+    latencyUs: 17,
+    cpu: 13.8,
+    reason: 'Advertising start/stop'
+  },
+  {
+    from: 'AdvUpdateProcess',
+    to: 'prvIdleTask',
+    runtimeUs: 120,
+    latencyUs: 9,
+    cpu: 6.1,
+    reason: 'Returned to idle while waiting on flag'
+  }
+];
+
+function buildTaskSwitchEntries() {
   const now = Date.now();
-  return [
-    { ts: new Date(now - 3000).toISOString(), step: 'boot', result: 'ok' },
-    { ts: new Date(now - 2000).toISOString(), step: 'ble_handshake', result: 'ok' },
-    { ts: new Date(now - 1000).toISOString(), step: 'intrusion_detect', result: 'trip' },
-    { ts: new Date(now - 200).toISOString(), step: 'watchdog', result: 'reset' }
-  ];
+  const totalSwitches = 32;
+  return Array.from({ length: totalSwitches }, (_, idx) => {
+    const template = TASK_SWITCH_PATTERN[idx % TASK_SWITCH_PATTERN.length];
+    const jitter = (idx % 5) * 3;
+    const timestamp = new Date(now - (totalSwitches - idx) * 25).toISOString();
+    return {
+      ordinal: idx + 1,
+      timestamp,
+      fromTask: template.from,
+      toTask: template.to,
+      runtimeUs: template.runtimeUs + jitter,
+      readyLatencyUs: template.latencyUs + (idx % 3),
+      cpuPercent: parseFloat((template.cpu + jitter / 10).toFixed(1)),
+      reason: template.reason
+    };
+  });
 }
 
 function buildEventLogEntries() {
@@ -280,95 +358,200 @@ function formatBacktraceList(backtrace = []) {
 
 const CORE_DUMP_TASK_SNAPSHOTS = [
   {
-    label: 'Task 0 — HardFault_Handler',
-    state: 'Faulted (precise bus error)',
-    priority: 'ISR context',
-    reason: 'HardFault while copying BLE packet',
-    pc: '0x08023F42',
-    lr: '0x0800D5D1',
-    sp: '0x2001FF0C',
-    registers: {
-      r0: '0x2001FD44',
-      r1: '0x00000001',
-      r2: '0x20000010',
-      r3: '0xE000ED2C',
-      r12: '0x0800A37F',
-      psr: '0x21000000'
-    },
-    stack: { used: 352, total: 512, highWaterMark: 144 },
-    lastSyscall: 'xQueueSendFromISR(intrusionQueue)',
+    label: 'Thread 11 — AdvUpdateProcess',
+    state: 'Blocked (notification wait)',
+    priority: 'unknown',
+    reason: 'AdvUpdateProcess waiting on osThreadFlagsWait for BLE advertiser update ack',
+    pc: '0x0802159e',
+    lr: '0x080207e6',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osThreadFlagsWait(flags=1)',
     backtrace: [
-      '#0 HardFault_Handler() @ startup_stm32wb55xx.s:126',
-      '#1 prvBleRadioIsrBridge() @ ble_link.c:218',
-      '#2 EXTI4_15_IRQHandler() @ stm32wbxx_it.c:302',
-      '#3 intrusion_isr_shim() @ intrusion_sensor.c:144'
+      '#0 vPortExitCritical() @ port.c:435',
+      '#1 xTaskNotifyWait() @ tasks.c:4752',
+      '#2 osThreadFlagsWait() @ cmsis_os2.c:829',
+      '#3 AdvUpdateProcess() @ app_ble_custom.c:1796',
+      '#4 pxPortInitialiseStack() @ port.c:214'
     ]
   },
   {
-    label: 'Task 1 — intrusion-monitor-task',
-    state: 'Blocked (waiting on queue)',
-    priority: '4 (High)',
-    reason: 'Waiting for intrusion_event_queue',
-    pc: '0x08010B4E',
-    lr: '0x0800F8A9',
-    sp: '0x2001F9D0',
-    registers: {
-      r0: '0x2000145C',
-      r1: '0x00000000',
-      r2: '0x20000AF0',
-      r3: '0x20000AF0',
-      r7: '0x2001FA0C'
-    },
-    stack: { used: 296, total: 512, highWaterMark: 168 },
-    lastSyscall: 'xQueueReceive(intrusion_event_queue, 250ms)',
+    label: 'Thread 10 — HciUserEvtProcess',
+    state: 'Blocked (notification wait)',
+    priority: 'unknown',
+    reason: 'HciUserEvtProcess sleeping in osThreadFlagsWait while BLE host events stalled',
+    pc: '0x0802159e',
+    lr: '0x080207e6',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osThreadFlagsWait(flags=1)',
     backtrace: [
-      '#0 xQueueGenericReceive() @ queue.c:2532',
-      '#1 wait_for_intrusion_event() @ intrusion_sensor.c:201',
-      '#2 intrusion_monitor_task() @ intrusion_sensor.c:156'
+      '#0 vPortExitCritical() @ port.c:435',
+      '#1 xTaskNotifyWait() @ tasks.c:4752',
+      '#2 osThreadFlagsWait() @ cmsis_os2.c:829',
+      '#3 HciUserEvtProcess() @ app_ble_custom.c:1815',
+      '#4 pxPortInitialiseStack() @ port.c:214'
     ]
   },
   {
-    label: 'Task 2 — ble-link-handler',
-    state: 'Ready (preempted)',
-    priority: '3 (Above normal)',
-    reason: 'Pending on semBLELink',
-    pc: '0x0800E21A',
-    lr: '0x0800DFA2',
-    sp: '0x2001F5E8',
-    registers: {
-      r0: '0x2000211C',
-      r1: '0x20002184',
-      r4: '0x2001F60C',
-      r5: '0x200013D0',
-      r7: '0x2001F60C'
-    },
-    stack: { used: 264, total: 384, highWaterMark: 144 },
-    lastSyscall: 'xSemaphoreTake(semBLELink, 20ms)',
+    label: 'Thread 9 — ShciUserEvtProcess',
+    state: 'Blocked (notification wait)',
+    priority: 'unknown',
+    reason: 'ShciUserEvtProcess awaiting SHCI flag from CPU2 co-processor',
+    pc: '0x0802159e',
+    lr: '0x080207e6',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osThreadFlagsWait(flags=1)',
     backtrace: [
-      '#0 uxPortYieldWithinAPI() @ port.c:465',
-      '#1 ble_link_wait_for_evt() @ ble_link.c:412',
-      '#2 ble_link_task() @ ble_link.c:361'
+      '#0 vPortExitCritical() @ port.c:435',
+      '#1 xTaskNotifyWait() @ tasks.c:4752',
+      '#2 osThreadFlagsWait() @ cmsis_os2.c:829',
+      '#3 ShciUserEvtProcess() @ app_entry.c:581',
+      '#4 pxPortInitialiseStack() @ port.c:214'
     ]
   },
   {
-    label: 'Task 3 — freertos-idle',
-    state: 'Idle',
-    priority: '0 (Idle)',
-    reason: 'FreeRTOS idle maintenance',
-    pc: '0x0800C6F0',
-    lr: '0x0800C6DF',
-    sp: '0x2001F3A0',
-    registers: {
-      r0: '0x00000000',
-      r1: '0x00000000',
-      r2: '0x00000000',
-      r3: '0x00000000',
-      r7: '0x2001F3C8'
-    },
-    stack: { used: 128, total: 256, highWaterMark: 208 },
-    lastSyscall: 'prvIdleTask() cleanup',
+    label: 'Thread 8 — prvTimerTask',
+    state: 'Ready (timer service)',
+    priority: 'timer daemon',
+    reason: 'FreeRTOS timer daemon draining deferred callbacks',
+    pc: 'prvProcessTimerOrBlockTask (timers.c:641)',
+    lr: '0x08020e1e',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'prvTimerTask()',
     backtrace: [
-      '#0 prvIdleTask() @ tasks.c:4022'
+      '#0 prvProcessTimerOrBlockTask() @ timers.c:641',
+      '#1 prvTimerTask() @ timers.c:576',
+      '#2 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 7 — prvIdleTask',
+    state: 'Idle (vApplicationIdleHook)',
+    priority: 'idle',
+    reason: 'Idle task running vApplicationIdleHook while other tasks blocked',
+    pc: 'vApplicationIdleHook (main.c:1589)',
+    lr: '0x08020100',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'prvIdleTask()',
+    backtrace: [
+      '#0 vApplicationIdleHook() @ main.c:1589',
+      '#1 prvIdleTask() @ tasks.c:3452',
+      '#2 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 6 — BLE_AppTask',
+    state: 'Delayed (vTaskDelay)',
+    priority: 'application',
+    reason: 'BLE_AppTask sleeping between link management cycles',
+    pc: '0x0801f6a8',
+    lr: '0x0801da22',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osDelay(10)',
+    backtrace: [
+      '#0 vTaskDelay() @ tasks.c:1373',
+      '#1 osDelay() @ cmsis_os2.c:891',
+      '#2 BLE_AppTask() @ main.c:2344',
+      '#3 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 5 — SongPlay',
+    state: 'Blocked (semaphore)',
+    priority: 'application',
+    reason: 'SongPlay waiting on SongActionControlBlock semaphore',
+    pc: '0x0801ecf4',
+    lr: '0x0801ddd6',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osSemaphoreAcquire(SongActionControlBlock)',
+    backtrace: [
+      '#0 xQueueSemaphoreTake() @ queue.c:1573',
+      '#1 osSemaphoreAcquire() @ cmsis_os2.c:1609',
+      '#2 SongPlay() @ main.c:2230',
+      '#3 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 4 — SendCommandsMain',
+    state: 'Blocked (semaphore)',
+    priority: 'application',
+    reason: 'SendCommandsMain waiting on SendScriptControlBlock semaphore',
+    pc: '0x0801ecf4',
+    lr: '0x0801ddd6',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osSemaphoreAcquire(SendScriptControlBlock)',
+    backtrace: [
+      '#0 xQueueSemaphoreTake() @ queue.c:1573',
+      '#1 osSemaphoreAcquire() @ cmsis_os2.c:1609',
+      '#2 SendCommandsMain() @ main.c:2164',
+      '#3 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 3 — PulseDensityMain',
+    state: 'Blocked (semaphore)',
+    priority: 'application',
+    reason: 'PulseDensityMain waiting on ProcessPulseDensityControlBlock semaphore',
+    pc: '0x0801ecf4',
+    lr: '0x0801ddd6',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osSemaphoreAcquire(ProcessPulseDensityControlBlock)',
+    backtrace: [
+      '#0 xQueueSemaphoreTake() @ queue.c:1573',
+      '#1 osSemaphoreAcquire() @ cmsis_os2.c:1609',
+      '#2 PulseDensityMain() @ main.c:2134',
+      '#3 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 2 — HeartbeatTaskMain',
+    state: 'Delayed (vTaskDelay)',
+    priority: 'application',
+    reason: 'HeartbeatTaskMain pacing heartbeat update via vTaskDelay',
+    pc: '0x0801f6a8',
+    lr: '0x0801da22',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'osDelay(10)',
+    backtrace: [
+      '#0 vTaskDelay() @ tasks.c:1373',
+      '#1 osDelay() @ cmsis_os2.c:891',
+      '#2 HeartbeatTaskMain() @ main.c:2016',
+      '#3 pxPortInitialiseStack() @ port.c:214'
+    ]
+  },
+  {
+    label: 'Thread 1 — CMD_Coredump',
+    state: 'Faulted (ADV_UPDATE_PROCESS)',
+    priority: 'ISR/command',
+    reason: 'CMD_Coredump running under ADV_UPDATE_PROCESS when watchdog tripped',
+    pc: '0x08007e0a',
+    lr: '0x00000000',
+    sp: 'n/a',
+    registers: {},
+    stack: {},
+    lastSyscall: 'CMD_Coredump()',
+    backtrace: [
+      '#0 CMD_Coredump() @ COMMAND.c:1772',
+      '#1 ?? (corrupt stack)'
     ]
   }
 ];

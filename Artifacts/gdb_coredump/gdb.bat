@@ -1,4 +1,3 @@
-@ -0,0 +1,48 @@
 @echo off
 REM =============================================================================
 REM Helper script to open a firmware ELF and coredump ELF in arm-none-eabi-gdb
@@ -12,6 +11,9 @@ setlocal enabledelayedexpansion
 REM Allow overriding the GDB executable (falls back to arm-none-eabi-gdb)
 set "GDB_CMD=%GDB_EXE%"
 if "%GDB_CMD%"=="" set "GDB_CMD=arm-none-eabi-gdb"
+
+REM Optional extra -ex commands (space-delimited) supplied through GDB_EXTRA_EX
+set "GDB_EXTRA_EX=%GDB_EXTRA_EX%"
 
 set "SCRIPT_DIR=%~dp0"
 
@@ -40,10 +42,6 @@ echo Launching %GDB_CMD% with:
 echo   Symbols : %BUILD_ELF%
 echo   Coredump: %CORE_ELF%
 
-"%GDB_CMD%" ^
-    -ex "set confirm off" ^
-    -ex "set pagination off" ^
-    -se "%BUILD_ELF%" ^
-    -core "%CORE_ELF%"
+"%GDB_CMD%" -ex "set confirm off" -ex "set pagination off" -se "%BUILD_ELF%" -core "%CORE_ELF%" !GDB_EXTRA_EX!
 
-endlocal
+endlocalset logging off
