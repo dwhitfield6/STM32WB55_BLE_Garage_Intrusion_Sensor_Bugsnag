@@ -221,17 +221,23 @@ function buildDetailedTaskTables() {
 
 function buildTaskDetailTable(task) {
   return {
-    State: task.state,
-    Priority: task.priority,
-    'Fault / Reason': task.reason,
-    'Program Counter': task.pc,
-    'Link Register': task.lr,
-    'Stack Pointer': task.sp,
-    'Stack Usage': formatStackUsage(task.stack),
-    'High-Water Mark': formatHighWaterMark(task.stack),
-    'Last Syscall': task.lastSyscall,
-    'Top Frame': task.backtrace[0],
-    'Backtrace': task.backtrace.join(' → '),
+    Summary: {
+      State: task.state,
+      Priority: task.priority,
+      'Fault / Reason': task.reason
+    },
+    Stack: {
+      'Program Counter': task.pc,
+      'Link Register': task.lr,
+      'Stack Pointer': task.sp,
+      'Stack Usage': formatStackUsage(task.stack),
+      'High-Water Mark': formatHighWaterMark(task.stack)
+    },
+    Execution: {
+      'Last Syscall': task.lastSyscall,
+      'Top Frame': task.backtrace[0]
+    },
+    Backtrace: formatBacktraceList(task.backtrace),
     Registers: formatRegisterPairs(task.registers)
   };
 }
@@ -257,7 +263,14 @@ function formatRegisterPairs(registers = {}) {
   }
   return Object.entries(registers)
     .map(([reg, value]) => `${reg.toUpperCase()}: ${value}`)
-    .join(', ');
+    .join('\n');
+}
+
+function formatBacktraceList(backtrace = []) {
+  if (!backtrace.length) {
+    return 'n/a';
+  }
+  return backtrace.join('\n');
 }
 
 const CORE_DUMP_TASK_SNAPSHOTS = [
@@ -369,7 +382,8 @@ function buildAttachmentMetadata(error, contextLabel) {
   return {
     tasklogZip: buildRemoteAttachment('Artifacts/tasklog.zip'),
     eventlogZip: buildRemoteAttachment('Artifacts/eventlog.zip'),
-    gdbCoreDumpZip: buildRemoteAttachment('Artifacts/gdb_coredump.zip')
+    gdbCoreDumpZip: buildRemoteAttachment('Artifacts/gdb_coredump.zip'),
+    coredumpBinary: buildRemoteAttachment('Artifacts/coredump/gdb_coredump.bin')
   };
 }
 
