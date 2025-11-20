@@ -36,7 +36,7 @@ Simple Node.js helper that simulates an STM32WB55 BLE garage intrusion sensor cr
 
 Each crash now surfaces an `attachments` metadata card inside Bugsnag. By default the card lists the three ZIP files checked into this repo (`Artifacts/tasklog.zip`, `Artifacts/eventlog.zip`, `Artifacts/gdb_coredump.zip`) so reviewers know exactly which archive to fetch or ship with the bug report. To customize:
 
-1. **Use repo bundles (default)** – keep `INCLUDE_LOCAL_ATTACHMENTS=true` and update the ZIPs under `Artifacts/` whenever you capture a new log bundle. Bugsnag will display their relative paths plus descriptions.
+1. **Use repo bundles (default)** – keep `INCLUDE_LOCAL_ATTACHMENTS=true` and update the ZIPs under `Artifacts/` whenever you capture a new log bundle. Bugsnag will display clickable URLs that point directly at those raw files (via `REPO_DOWNLOAD_BASE_URL`).
 2. **Link to hosted bundles** – set `CRASH_ARCHIVE_URL` in `.env` to a publicly reachable ZIP (e.g., S3, Azure Blob, GitHub Release). Bugsnag will show that URL so teammates can click-to-download directly. Optionally set `INCLUDE_LOCAL_ATTACHMENTS=false` if you don’t want local artifacts listed.
 
 `.env` quick reference:

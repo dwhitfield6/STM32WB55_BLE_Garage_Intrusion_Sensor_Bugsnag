@@ -15,8 +15,8 @@ if (!apiKey) {
 
 Bugsnag.start({
   apiKey,
-  appType: 'stm32wb55-garage-sensor',
-  appVersion: process.env.FIRMWARE_VERSION || '1.0.0',
+  appType: 'STM32WB55_BLE_Garage_Intrusion_Sensor',
+  appVersion: process.env.FIRMWARE_VERSION || '52.0b',
   releaseStage: process.env.NODE_ENV || 'development'
 });
 
@@ -59,13 +59,22 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
   event.setUser(sensorId, undefined, 'Garage Intrusion Sensor');
   event.severity = 'error';
 
-  event.addMetadata('sensor', {
-    sensorId,
-    firmwareVersion: process.env.FIRMWARE_VERSION || '1.0.0',
-    hardware: 'STM32WB55',
-    location: 'Garage Door',
-    reason: error.code || 'unknown'
-  });
+  event.device = event.device || {};
+  event.device.country_code = 'US';
+  event.device.RTOS = 'FreeRTOS 10.3';
+
+  if (event.app && event.app.runtimeVersions) {
+    delete event.app.runtimeVersions;
+  }
+  if (event.device && event.device.runtimeVersions) {
+    delete event.device.runtimeVersions;
+  }
+  if (event.runtimeVersions) {
+    delete event.runtimeVersions;
+  }
+
+  removeKeys(event.device, ['freeMemory', 'hostname', 'osName', 'osVersion', 'time', 'totalMemory']);
+  removeKeys(event, ['freeMemory', 'hostname', 'osName', 'osVersion', 'time', 'totalMemory']);
 
   event.addMetadata('diagnostics', {
     watchdogWindowMs: 1500,
@@ -126,8 +135,7 @@ function buildTaskEntries() {
 function buildAttachmentMetadata(error, contextLabel) {
   if (crashArchiveUrl) {
     return {
-      crashArchiveUrl,
-      note: 'External crash archive link'
+      crashArchive: crashArchiveUrl
     };
   }
 
@@ -136,19 +144,27 @@ function buildAttachmentMetadata(error, contextLabel) {
   }
 
   return {
-    tasklog: buildRemoteAttachment('Artifacts/tasklog.zip', 'Task log snapshot'),
-    eventlog: buildRemoteAttachment('Artifacts/eventlog.zip', 'Event log snapshot'),
-    gdbCoreDump: buildRemoteAttachment('Artifacts/gdb_coredump.zip', 'GDB coredump')
+    tasklogZip: buildRemoteAttachment('Artifacts/tasklog.zip'),
+    eventlogZip: buildRemoteAttachment('Artifacts/eventlog.zip'),
+    gdbCoreDumpZip: buildRemoteAttachment('Artifacts/gdb_coredump.zip')
   };
 }
 
-function buildRemoteAttachment(relativePath, description) {
-  const normalizedRelativePath = relativePath.replace(/^\//, '');
-  const downloadUrl = `${repoDownloadBaseUrl}/${normalizedRelativePath}`;
-  return {
-    downloadUrl,
-    description
-  };
+function buildRemoteAttachment(relativePath) {
+  const normalizedRelativePath = relativePath.replace(/^\/+/, '');
+  const base = repoDownloadBaseUrl.replace(/\/+$/, '');
+  return `${base}/${normalizedRelativePath}`;
+}
+
+function removeKeys(target, keys) {
+  if (!target) {
+    return;
+  }
+  keys.forEach(key => {
+    if (Object.prototype.hasOwnProperty.call(target, key)) {
+      delete target[key];
+    }
+  });
 }
 
 async function main() {

@@ -1,6 +1,6 @@
 {
   "name": "stm32wb55_ble_garage_intrusion_sensor_bugsnag",
-  "version": "1.0.0",
+  "version": "52.0b",
   "description": "Node CLI that sends STM32WB55 garage intrusion crashes to Bugsnag",
   "main": "src/index.js",
   "scripts": {
