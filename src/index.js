@@ -28,17 +28,7 @@ function sendCrashToBugsnag(error, contextLabel) {
     Bugsnag.notify(
       error,
       event => {
-        event.context = contextLabel;
-        const sensorId = error.sensorId || process.env.SENSOR_ID || 'garage-door-node-01';
-        event.setUser(sensorId, undefined, 'Garage Intrusion Sensor');
-        event.severity = 'error';
-        event.addMetadata('sensor', {
-          sensorId,
-          firmwareVersion: process.env.FIRMWARE_VERSION || '1.0.0',
-          hardware: 'STM32WB55',
-          location: 'Garage Door',
-          reason: error.code || 'unknown'
-        });
+        enrichEventWithDiagnostics(event, error, contextLabel);
       },
       notifyError => {
         if (notifyError) {
@@ -57,6 +47,71 @@ function sendBugsnagSmokeTest() {
   Bugsnag.notify(new Error('Test error'));
 }
 
+function enrichEventWithDiagnostics(event, error, contextLabel) {
+  event.context = contextLabel;
+  const sensorId = error.sensorId || process.env.SENSOR_ID || 'garage-door-node-01';
+  event.setUser(sensorId, undefined, 'Garage Intrusion Sensor');
+  event.severity = 'error';
+
+  event.addMetadata('sensor', {
+    sensorId,
+    firmwareVersion: process.env.FIRMWARE_VERSION || '1.0.0',
+    hardware: 'STM32WB55',
+    location: 'Garage Door',
+    reason: error.code || 'unknown'
+  });
+
+  event.addMetadata('diagnostics', {
+    watchdogWindowMs: 1500,
+    bleRssi: '-62dBm',
+    lastHeartbeatTs: new Date().toISOString(),
+    detail: error.detail
+  });
+
+  event.addMetadata('tasklog', {
+    entries: buildTaskLogEntries(),
+    lastCommand: 'tasklog stuff'
+  });
+
+    event.addMetadata('eventlog', {
+    entries: buildEventLogEntries(),
+    lastCommand: 'event log stuff'
+  });
+
+  event.addMetadata('threads', {
+    entries: buildThreadEntries(),
+    lastCommand: 'thread log stuff'
+  });
+}
+
+function buildTaskLogEntries() {
+  const now = Date.now();
+  return [
+    { ts: new Date(now - 3000).toISOString(), step: 'boot', result: 'ok' },
+    { ts: new Date(now - 2000).toISOString(), step: 'ble_handshake', result: 'ok' },
+    { ts: new Date(now - 1000).toISOString(), step: 'intrusion_detect', result: 'trip' },
+    { ts: new Date(now - 200).toISOString(), step: 'watchdog', result: 'reset' }
+  ];
+}
+
+function buildEventLogEntries() {
+    const now = Date.now();
+    return [
+      { ts: new Date(now - 3000).toISOString(), event: 'system_start' },
+      { ts: new Date(now - 2000).toISOString(), event: 'ble_handshake_success' },
+      { ts: new Date(now - 1000).toISOString(), event: 'intrusion_detected' },
+      { ts: new Date(now - 200).toISOString(), event: 'watchdog_reset' }
+    ];
+  }
+
+function buildThreadEntries() {
+    return [
+      { id: '1', name: 'ble-link-handler', state: 'running' },
+      { id: '2', name: 'intrusion-monitor-task', state: 'waiting' },
+      { id: '3', name: 'stm32-watchdog', state: 'stopped' }
+    ];
+  } 
+
 async function main() {
   sendBugsnagSmokeTest();
   console.log('Simulating STM32WB55 intrusion sensor crash...');
@@ -65,6 +120,6 @@ async function main() {
 
 main().catch(async error => {
   console.error('Crash captured locally. Uploading to Bugsnag...');
-  await sendCrashToBugsnag(error, 'garage.intrusion.sensor');
+  await sendCrashToBugsnag(error, 'STM32WB55_Intrusion_Sensor');
   process.exit(1);
 });
