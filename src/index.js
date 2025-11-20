@@ -110,14 +110,19 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
 
   event.addMetadata('tasklog', {
     entries: buildTaskLogEntries(),
-    lastCommand: 'tasklog stuff'
+    lastCommand: 'tasklog stuff',
+    source: buildRemoteAttachment('Artifacts/tasklog/SYSVIEW_FreeRTOS.txt')
   });
 
-  const eventLogTables = buildEventLogTables();
   event.addMetadata('eventlog', {
-    lastCommand: 'event log stuff',
-    note: 'Expand each event row to see the timeline payload decoded from SYSVIEW logs.',
-    ...eventLogTables
+    raw: 'ABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCDEF',
+    systemEvents: [
+      'STM32 system_init: PLL locked and clocks stable',
+      'STM32 ble_stack_start: HCI transport ready',
+      'STM32 intrusion_monitor_task: ISR queued intrusion event',
+      'STM32 watchdog_reset: IWDG triggered after stalled BLE queue flush'
+    ],
+    zipDownload: buildRemoteAttachment('Artifacts/eventlog.zip')
   });
 
   const detailedTaskTables = buildDetailedTaskTables();
