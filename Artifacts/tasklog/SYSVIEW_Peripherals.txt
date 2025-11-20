@@ -1,0 +1,107 @@
+# /*********************************************************************
+# *             David Whitfield                                        *
+# * Note* the first macro must start at 128
+# * Note* The SPI and UART peripherals cant be traced as they are the
+# *       onces streaming the tracing data so we would nest
+# **********************************************************************
+
+#
+# Events for Peripheral and System API functions
+#
+
+# Named Types for formatted parameters
+NamedType PulseRxState 0=PULSEDENSITY_SYNCHRONIZATION_INIT 1=PULSEDENSITY_SYNCHRONIZATION 2=PULSEDENSITY_ACQUISITION_INIT
+NamedType PulseRxState 3=PULSEDENSITY_ACQUISITION 4=PULSEDENSITY_DECODE_INIT 5=PULSEDENSITY_DECODE
+NamedType PulseTxState 0=PULSEDENSITY_SEND_SYNC 1=PULSEDENSITY_SEND_SYNC_GAP 2=PULSEDENSITY_SEND_TSP_PRE_1
+NamedType PulseTxState 3=PULSEDENSITY_SEND_1 4=PULSEDENSITY_SEND_TSP_POST_1 5=PULSEDENSITY_SEND_GAP_1 6=PULSEDENSITY_SEND_TSP_PRE_2
+NamedType PulseTxState 7=PULSEDENSITY_SEND_2 8=PULSEDENSITY_SEND_TSP_POST_2 9=PULSEDENSITY_SEND_GAP_2 10=PULSEDENSITY_SEND_TSP_PRE_3
+NamedType PulseTxState 11=PULSEDENSITY_SEND_3 12=PULSEDENSITY_SEND_TSP_POST_3 13=PULSEDENSITY_SEND_GAP_3 14=PULSEDENSITY_SEND_TSP_PRE_4
+NamedType PulseTxState 15=PULSEDENSITY_SEND_4 16=PULSEDENSITY_SEND_TSP_POST_4 17=PULSEDENSITY_SEND_GAP_4 18=PULSEDENSITY_SEND_TSP_PRE_5
+NamedType PulseTxState 19=PULSEDENSITY_SEND_5 20=PULSEDENSITY_SEND_TSP_POST_5 21=PULSEDENSITY_SEND_GAP_5 22=PULSEDENSITY_SEND_END
+NamedType BuzzerSongState 0=BUZZER_SONG_STOPPED 1=BUZZER_SONG_PLAYING 2=BUZZER_SONG_ADVANCING
+NamedType PulseSyncState 0=PULSEDENSITY_SYNC_LOST 1=PULSEDENSITY_SYNC_LOCKED
+NamedType PulsePendulumState 0=PENDULUM_CLEAR 1=PENDULUM_BLOCKED
+NamedType BoolFlag 0=FALSE 1=TRUE
+NamedType HardwareVariant 0=HARDWARE_TX 1=HARDWARE_RX 2=HARDWARE_GUIDE 3=HARDWARE_INVALID
+NamedType GarageModel 0=GARAGE_GENIE 1=GARAGE_LIFTMASTER 2=GARAGE_OTHER
+NamedType TerminalStatus 0=FAILED 1=SUCCESS
+
+# Terminal / CLI
+128     Terminal_Command_Process         cmd=%s
+129     Terminal_Command_Complete        status=%TerminalStatus
+130     Terminal_Character               character=%s
+
+# Watchdog
+131     Watchdog_Pet
+
+# SystemView Control
+132     SystemView_Start
+
+# Timer Events
+133     TIM17_IRQ_40kHz
+
+# IR Transmitter/Receiver
+134     IR_TX_Init                       channels=0x%x
+135     IR_TX_Start                      channel=%u
+136     IR_TX_Stop                       channel=%u
+137     IR_RX_Init                       channels=0x%x
+138     IR_RX_Detect                     channel=%u  level=%u
+139     Pulse_Density_Frame              frame=%u
+140     Pulse_Density_Detect             channel=%u  status=%u
+
+# Buzzer/RGB LED
+141     Buzzer_On                        freq=%u  duration=%u
+142     Buzzer_Off
+143     RGB_Set_Color                    r=%u  g=%u  b=%u
+
+# Garage Door Control
+144     Garage_State_Change              state=%BoolFlag
+
+# Flash/Storage
+145     Flash_Write_Start                addr=0x%x  bytes=%u
+146     Flash_Write_Complete             addr=0x%x
+147     Flash_Erase_Start                addr=0x%x  pages=%u
+148     Flash_Erase_Complete             addr=0x%x
+149     Flash_Error                      error=0x%x
+
+# RTC/Low-Power
+150     RTC_Init
+151     RTC_Wakeup
+
+# IPCC/Dual-Core
+152     IPCC_Init
+
+# Watchdog/Reset
+153     Watchdog_Early_Wakeup
+
+# GPIO/Hardware Options
+154     Options_Detect                   variant=%HardwareVariant
+155     Testpoint_Set                    tp=%u
+156     Testpoint_Clear                  tp=%u
+157     Testpoint_Toggle                 tp=%u
+
+# System/Misc
+158     System_Init
+
+# Error/Debug Extended
+159     HardFault_Entry                  pc=0x%x  lr=0x%x
+160     MemManage_Fault                  addr=0x%x
+161     BusFault_Entry                   addr=0x%x
+162     UsageFault_Entry                 type=%u
+
+# Garage Instrumentation
+163     Garage_PWM_Update                freq=%u  duty=%u
+164     Garage_Blockage_Output           model=%GarageModel | blocked=%BoolFlag
+
+# Buzzer Instrumentation
+165     Buzzer_PWM_Update                freq=%u  duty=%u
+166     Buzzer_Song_State                state=%BuzzerSongState  clip=%u
+
+# Garage Model Sense
+167     Garage_Model_Sensed              model=%GarageModel
+
+# Pulse Density State Machines
+168     PulseDensity_Rx_State            state=%PulseRxState
+169     PulseDensity_Tx_State            state=%PulseTxState
+170     PulseDensity_Sync_State          state=%PulseSyncState
+171     PulseDensity_Pendulum_State      state=%PulsePendulumState

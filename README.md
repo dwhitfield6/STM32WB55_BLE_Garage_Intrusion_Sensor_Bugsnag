@@ -24,6 +24,27 @@ Simple Node.js helper that simulates an STM32WB55 BLE garage intrusion sensor cr
 2. From the project root run one of:
 	- `npm start` – default command that runs the smoke test and simulated crash once
 	- `npm run crash` – alias for the same behaviour, useful if you add other scripts later
+	- `run-crash.bat [crash name]` – Windows helper that optionally sets `CRASH_NAME` (supports multi-word names like `"Garage Door Watchdog"`; run `run-crash.bat --help` for examples)
+
+`run-crash.bat` prompts if you omit a name, otherwise it forwards whatever you pass (including spaces) to the Node script so each crash in Bugsnag reflects the label you supplied. Examples:
+
+- `run-crash.bat`
+- `run-crash.bat Garage_Door_Watchdog`
+- `run-crash.bat "Garage Door Watchdog"`
+
+## Crash Archive Downloads
+
+Every crash now includes an `attachments` metadata card in Bugsnag so you can pull down a zipped artifact with the logs used to build the event. You have two options:
+
+1. **Inline zip (default)** – Set nothing and the script will build a tiny ZIP on the fly that contains `crash-report.json`, `task-log.json`, and `event-log.json`. Bugsnag shows a `data:application/zip;base64,...` link; paste it into a browser tab (or use a base64 decoder) to download the archive.
+2. **External link** – Point `CRASH_ARCHIVE_URL` (in `.env`) at any hosted ZIP (S3, GitHub Releases, etc.). Bugsnag will display that URL so teammates can click-to-download directly. Set `INLINE_CRASH_ZIP=false` if you only want the external link.
+
+`.env` quick reference:
+
+```
+CRASH_ARCHIVE_URL=https://example.com/garage-stm32-dump.zip
+INLINE_CRASH_ZIP=true
+```
 3. Watch the console:
 	- First `Bugsnag.notify(new Error('Test error'))` verifies connectivity
 	- Then the watchdog crash is thrown, caught, enriched, and uploaded

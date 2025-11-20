@@ -22,6 +22,7 @@
   "homepage": "https://github.com/dwhitfield6/STM32WB55_BLE_Garage_Intrusion_Sensor_Bugsnag#readme",
   "dependencies": {
     "@bugsnag/node": "^8.6.0",
+    "adm-zip": "^0.5.16",
     "dotenv": "^17.2.3"
   }
 }
