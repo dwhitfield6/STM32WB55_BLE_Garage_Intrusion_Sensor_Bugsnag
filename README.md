@@ -1,6 +1,6 @@
 # STM32WB55 BLE Garage Intrusion Sensor + Bugsnag
 
-Simple Node.js helper that simulates an STM32WB55 BLE garage intrusion sensor crash and uploads it to Bugsnag. Use it to validate your API key, experiment with metadata, or integrate with a CI gate before rolling the notifier into firmware tooling.
+Simple Node.js helper that simulates an STM32WB55 BLE garage intrusion sensor crash and uploads it to Bugsnag. Use it to validate your API key, experiment with metadata, or integrate with a CI gate before rolling the notifier into firmware tooling. The sample project streams crashes to the hosted dashboard here: [STM32WB55 BLE Garage Intrusion Sensor (Bugsnag)](https://app.bugsnag.com/personal-projects-7/stm32wb55-ble-garage-intrusion-sensor).
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ Simple Node.js helper that simulates an STM32WB55 BLE garage intrusion sensor cr
 
 1. Confirm `.env` contains a valid `BUGSNAG_API_KEY` (plus optional `SENSOR_ID`, `FIRMWARE_VERSION`).
 2. From the project root run one of:
-	- `npm start` – default command that runs the smoke test and simulated crash once
+	- `npm start` – default command that throws the simulated crash once
 	- `npm run crash` – alias for the same behaviour, useful if you add other scripts later
 	- `run-crash.bat [crash name]` – Windows helper that optionally sets `CRASH_NAME` (supports multi-word names like `"Garage Door Watchdog"`; run `run-crash.bat --help` for examples)
 
@@ -48,14 +48,12 @@ REPO_DOWNLOAD_BASE_URL=https://raw.githubusercontent.com/dwhitfield6/STM32WB55_B
 ```
 
 `REPO_DOWNLOAD_BASE_URL` controls the prefix used for the clickable links that point at `Artifacts/*.zip`. Leave the default to serve files directly from GitHub’s raw view, or swap in your own CDN/hosting location.
-3. Watch the console:
-	- First `Bugsnag.notify(new Error('Test error'))` verifies connectivity
-	- Then the watchdog crash is thrown, caught, enriched, and uploaded
-4. Check your Bugsnag dashboard for two new events (smoke test + sensor crash). Each run exits with code `1`, mirroring a real firmware crash exit path, so wrap it in CI accordingly.
+3. Watch the console: the script prints `Simulating STM32WB55 intrusion sensor crash "<name>"...` and, after enrichment, `Crash "<name>" sent to Bugsnag.`
+4. Check your Bugsnag dashboard for the new sensor crash. Each run exits with code `1`, mirroring a real firmware crash exit path, so wrap it in CI accordingly.
 
 ## Trigger a Crash Upload
 
-Run `npm start` (or `npm run crash`). The script intentionally throws a `GARAGE_SENSOR_WATCHDOG` error, catches it locally, and forwards the enriched event to Bugsnag with:
+Run `npm start` (or `npm run crash`). The script intentionally throws a `Coredump Forced` error, catches it locally, and forwards the enriched event to Bugsnag with:
 
 - Sensor identity (defaults to `garage-door-node-01`)
 - Firmware/hardware metadata
@@ -75,10 +73,18 @@ Once a crash lands in Bugsnag, each tab is already pre-populated so reviewers ca
 	- `registers`: Cortex-M4 snapshot (core registers, SP/LR/PC/PSR) sourced from [`Artifacts/coredump/gdb_coredump.bin`](Artifacts/coredump/gdb_coredump.bin).
 	- `threads`: Clickable tables for every thread captured in the coredump, including state, stack usage, registers, syscalls, and backtraces.
 	- `tasks`: Mirrors the thread tables plus the legacy task list for dashboards that still expect the old shape.
-	- `tasklog` / `eventlog`: Recent timeline entries so you can correlate the crash to the BLE/intrusion flow.
+	- `tasklog`: Links to the captured SystemView trace (`trace_001.SVDat`) and lists the last 32 task switches (task names only) so you can spot scheduling churn quickly.
+	- `eventlog`: Recent BLE/intrusion milestones plus a ZIP download for the raw SYSVIEW export.
 	- `attachments`: Click-to-download ZIPs pointing at `Artifacts/*.zip` (or your hosted bundle via `CRASH_ARCHIVE_URL`).
 
 These defaults live in `src/index.js`. Update the `CORE_DUMP_THREAD_SNAPSHOTS`, `buildRegisterSnapshot`, or any metadata helpers if you capture a new coredump and want the UI to stay in lockstep with real hardware.
+
+## Testing & Validation
+
+1. Run `npm run crash` (or `run-crash.bat <name>`). The process logs the simulated crash name and exits with status 1 after sending the event.
+2. Open Bugsnag and confirm a single new event for the crash name you provided. Verify the metadata tabs render the SVDat link, 32-task switch list, and GDB-derived task tables.
+3. Optional: refresh the GDB snapshots by running `Artifacts/gdb_coredump/gdb.bat` with `GDB_EXTRA_EX='-ex "set logging file thread_apply_all_bt.txt" -ex "set logging on" -ex "thread apply all bt" -ex "set logging off" -ex "quit"'`. Commit the updated `thread_apply_all_bt.txt` to keep the `tasks` tab aligned with your latest coredump.
+4. If you host crash bundles elsewhere, set `CRASH_ARCHIVE_URL` and re-run the crash to ensure Bugsnag surfaces the new attachment destination you expect.
 
 ## Customizing
 

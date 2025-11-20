@@ -22,7 +22,7 @@ Bugsnag.start({
 
 async function simulateGarageCrash() {
   const error = new Error('Garage intrusion MCU watchdog reset');
-  error.code = 'GARAGE_SENSOR_WATCHDOG';
+  error.code = 'Coredump Forced';
   error.sensorId = process.env.SENSOR_ID || 'STM32WB55_BLE_Garage_Intrusion_Sensor';
   error.detail = 'BLE link lost and watchdog fired while processing intrusion alert.';
   throw error;
@@ -109,8 +109,8 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
   event.addMetadata('registers', buildRegisterSnapshot());
 
   event.addMetadata('tasklog', {
-    systemViewTrace: buildRemoteAttachment('Artifacts/tasklog/SYSVIEW_FreeRTOS.txt'),
-    switches: buildTaskSwitchEntries()
+    systemViewTrace: buildRemoteAttachment('Artifacts/tasklog/trace_001.SVDat'),
+    switches: buildTaskSwitchList()
   });
 
   event.addMetadata('eventlog', {
@@ -139,90 +139,21 @@ function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
   }
 }
 
-const TASK_SWITCH_PATTERN = [
-  {
-    from: 'prvIdleTask',
-    to: 'HeartbeatTaskMain',
-    runtimeUs: 180,
-    latencyUs: 12,
-    cpu: 8.5,
-    reason: 'Heartbeat tick broadcast'
-  },
-  {
-    from: 'HeartbeatTaskMain',
-    to: 'PulseDensityMain',
-    runtimeUs: 240,
-    latencyUs: 18,
-    cpu: 14.2,
-    reason: 'Hall sensor pulse processing'
-  },
-  {
-    from: 'PulseDensityMain',
-    to: 'SendCommandsMain',
-    runtimeUs: 310,
-    latencyUs: 22,
-    cpu: 21.6,
-    reason: 'Console script TX window'
-  },
-  {
-    from: 'SendCommandsMain',
-    to: 'SongPlay',
-    runtimeUs: 150,
-    latencyUs: 10,
-    cpu: 11.2,
-    reason: 'Siren wavetable playback'
-  },
-  {
-    from: 'SongPlay',
-    to: 'BLE_AppTask',
-    runtimeUs: 205,
-    latencyUs: 14,
-    cpu: 16.4,
-    reason: 'BLE link keep-alive'
-  },
-  {
-    from: 'BLE_AppTask',
-    to: 'HciUserEvtProcess',
-    runtimeUs: 270,
-    latencyUs: 19,
-    cpu: 19.7,
-    reason: 'HCI event fanout'
-  },
-  {
-    from: 'HciUserEvtProcess',
-    to: 'AdvUpdateProcess',
-    runtimeUs: 230,
-    latencyUs: 17,
-    cpu: 13.8,
-    reason: 'Advertising start/stop'
-  },
-  {
-    from: 'AdvUpdateProcess',
-    to: 'prvIdleTask',
-    runtimeUs: 120,
-    latencyUs: 9,
-    cpu: 6.1,
-    reason: 'Returned to idle while waiting on flag'
-  }
+const TASK_SWITCH_SEQUENCE = [
+  'prvIdleTask',
+  'HeartbeatTaskMain',
+  'PulseDensityMain',
+  'SendCommandsMain',
+  'SongPlay',
+  'BLE_AppTask',
+  'HciUserEvtProcess',
+  'AdvUpdateProcess'
 ];
 
-function buildTaskSwitchEntries() {
-  const now = Date.now();
+function buildTaskSwitchList() {
   const totalSwitches = 32;
   return Array.from({ length: totalSwitches }, (_, idx) => {
-    const template = TASK_SWITCH_PATTERN[idx % TASK_SWITCH_PATTERN.length];
-    const jitter = (idx % 5) * 3;
-    const timestamp = new Date(now - (totalSwitches - idx) * 25).toISOString();
-    return {
-      ordinal: idx + 1,
-      timestamp,
-      fromTask: template.from,
-      toTask: template.to,
-      runtimeUs: template.runtimeUs + jitter,
-      readyLatencyUs: template.latencyUs + (idx % 3),
-      cpuPercent: parseFloat((template.cpu + jitter / 10).toFixed(1)),
-      reason: template.reason
-    };
+    return TASK_SWITCH_SEQUENCE[idx % TASK_SWITCH_SEQUENCE.length];
   });
 }
 
@@ -593,7 +524,6 @@ function removeKeys(target, keys) {
 }
 
 async function main() {
-  sendBugsnagSmokeTest();
   console.log(`Simulating STM32WB55 intrusion sensor crash "${crashName}"...`);
   await simulateGarageCrash();
 }
