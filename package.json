@@ -1,0 +1,27 @@
+{
+  "name": "stm32wb55_ble_garage_intrusion_sensor_bugsnag",
+  "version": "1.0.0",
+  "description": "Node CLI that sends STM32WB55 garage intrusion crashes to Bugsnag",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "crash": "node src/index.js",
+    "test": "echo \"No automated tests yet\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dwhitfield6/STM32WB55_BLE_Garage_Intrusion_Sensor_Bugsnag.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dwhitfield6/STM32WB55_BLE_Garage_Intrusion_Sensor_Bugsnag/issues"
+  },
+  "homepage": "https://github.com/dwhitfield6/STM32WB55_BLE_Garage_Intrusion_Sensor_Bugsnag#readme",
+  "dependencies": {
+    "@bugsnag/node": "^8.6.0",
+    "dotenv": "^17.2.3"
+  }
+}
