@@ -1,12 +1,12 @@
 require('dotenv').config();
 const Bugsnag = require('@bugsnag/node');
-const AdmZip = require('adm-zip');
 
 const apiKey = process.env.BUGSNAG_API_KEY;
 const DEFAULT_CRASH_NAME = 'STM32WB55_Intrusion_Sensor';
 const crashName = process.env.CRASH_NAME || DEFAULT_CRASH_NAME;
 const crashArchiveUrl = process.env.CRASH_ARCHIVE_URL;
-const inlineCrashZipEnabled = (process.env.INLINE_CRASH_ZIP || 'true').toLowerCase() !== 'false';
+const includeLocalAttachments = (process.env.INCLUDE_LOCAL_ATTACHMENTS || 'true').toLowerCase() !== 'false';
+const repoDownloadBaseUrl = process.env.REPO_DOWNLOAD_BASE_URL || 'https://raw.githubusercontent.com/dwhitfield6/STM32WB55_BLE_Garage_Intrusion_Sensor_Bugsnag/main';
 
 if (!apiKey) {
   console.error('Missing BUGSNAG_API_KEY. Copy .env.example to .env and add your Bugsnag project key.');
@@ -29,12 +29,12 @@ async function simulateGarageCrash() {
 }
 
 function sendCrashToBugsnag(error, contextLabel) {
-  const crashArchive = buildCrashArchiveAttachment(error, contextLabel);
+  const attachments = buildAttachmentMetadata(error, contextLabel);
   return new Promise(resolve => {
     Bugsnag.notify(
       error,
       event => {
-        enrichEventWithDiagnostics(event, error, contextLabel, crashArchive);
+        enrichEventWithDiagnostics(event, error, contextLabel, attachments);
       },
       notifyError => {
         if (notifyError) {
@@ -53,7 +53,7 @@ function sendBugsnagSmokeTest() {
   Bugsnag.notify(new Error('Test error'));
 }
 
-function enrichEventWithDiagnostics(event, error, contextLabel, crashArchive) {
+function enrichEventWithDiagnostics(event, error, contextLabel, attachments) {
   event.context = contextLabel;
   const sensorId = error.sensorId || process.env.SENSOR_ID || 'garage-door-node-01';
   event.setUser(sensorId, undefined, 'Garage Intrusion Sensor');
@@ -90,8 +90,8 @@ function enrichEventWithDiagnostics(event, error, contextLabel, crashArchive) {
     lastCommand: 'task log stuff'
   });
 
-  if (crashArchive) {
-    event.addMetadata('attachments', crashArchive);
+  if (attachments) {
+    event.addMetadata('attachments', attachments);
   }
 }
 
@@ -123,45 +123,31 @@ function buildTaskEntries() {
     ];
   } 
 
-function buildCrashArchiveAttachment(error, contextLabel) {
+function buildAttachmentMetadata(error, contextLabel) {
   if (crashArchiveUrl) {
     return {
-      downloadUrl: crashArchiveUrl,
-      description: 'External crash archive link'
+      crashArchiveUrl,
+      note: 'External crash archive link'
     };
   }
 
-  if (!inlineCrashZipEnabled) {
+  if (!includeLocalAttachments) {
     return null;
   }
 
-  try {
-    const archive = new AdmZip();
-    archive.addFile('crash-report.json', Buffer.from(JSON.stringify(buildCrashReport(error, contextLabel), null, 2), 'utf8'));
-    archive.addFile('task-log.json', Buffer.from(JSON.stringify(buildTaskLogEntries(), null, 2), 'utf8'));
-    archive.addFile('event-log.json', Buffer.from(JSON.stringify(buildEventLogEntries(), null, 2), 'utf8'));
-    const buffer = archive.toBuffer();
-    return {
-      downloadName: `garage-crash-${Date.now()}.zip`,
-      sizeBytes: buffer.length,
-      dataUri: `data:application/zip;base64,${buffer.toString('base64')}`,
-      description: 'Copy the data URI into a new browser tab to download the archive.'
-    };
-  } catch (archiveError) {
-    console.warn('Failed to build crash archive attachment', archiveError.message);
-    return null;
-  }
+  return {
+    tasklog: buildRemoteAttachment('Artifacts/tasklog.zip', 'Task log snapshot'),
+    eventlog: buildRemoteAttachment('Artifacts/eventlog.zip', 'Event log snapshot'),
+    gdbCoreDump: buildRemoteAttachment('Artifacts/gdb_coredump.zip', 'GDB coredump')
+  };
 }
 
-function buildCrashReport(error, contextLabel) {
+function buildRemoteAttachment(relativePath, description) {
+  const normalizedRelativePath = relativePath.replace(/^\//, '');
+  const downloadUrl = `${repoDownloadBaseUrl}/${normalizedRelativePath}`;
   return {
-    crashName: contextLabel,
-    sensorId: error.sensorId || process.env.SENSOR_ID || 'garage-door-node-01',
-    firmwareVersion: process.env.FIRMWARE_VERSION || '1.0.0',
-    hardware: 'STM32WB55',
-    reason: error.code || 'unknown',
-    detail: error.detail,
-    timestamp: new Date().toISOString()
+    downloadUrl,
+    description
   };
 }
 

@@ -34,17 +34,20 @@ Simple Node.js helper that simulates an STM32WB55 BLE garage intrusion sensor cr
 
 ## Crash Archive Downloads
 
-Every crash now includes an `attachments` metadata card in Bugsnag so you can pull down a zipped artifact with the logs used to build the event. You have two options:
+Each crash now surfaces an `attachments` metadata card inside Bugsnag. By default the card lists the three ZIP files checked into this repo (`Artifacts/tasklog.zip`, `Artifacts/eventlog.zip`, `Artifacts/gdb_coredump.zip`) so reviewers know exactly which archive to fetch or ship with the bug report. To customize:
 
-1. **Inline zip (default)** – Set nothing and the script will build a tiny ZIP on the fly that contains `crash-report.json`, `task-log.json`, and `event-log.json`. Bugsnag shows a `data:application/zip;base64,...` link; paste it into a browser tab (or use a base64 decoder) to download the archive.
-2. **External link** – Point `CRASH_ARCHIVE_URL` (in `.env`) at any hosted ZIP (S3, GitHub Releases, etc.). Bugsnag will display that URL so teammates can click-to-download directly. Set `INLINE_CRASH_ZIP=false` if you only want the external link.
+1. **Use repo bundles (default)** – keep `INCLUDE_LOCAL_ATTACHMENTS=true` and update the ZIPs under `Artifacts/` whenever you capture a new log bundle. Bugsnag will display their relative paths plus descriptions.
+2. **Link to hosted bundles** – set `CRASH_ARCHIVE_URL` in `.env` to a publicly reachable ZIP (e.g., S3, Azure Blob, GitHub Release). Bugsnag will show that URL so teammates can click-to-download directly. Optionally set `INCLUDE_LOCAL_ATTACHMENTS=false` if you don’t want local artifacts listed.
 
 `.env` quick reference:
 
 ```
 CRASH_ARCHIVE_URL=https://example.com/garage-stm32-dump.zip
-INLINE_CRASH_ZIP=true
+INCLUDE_LOCAL_ATTACHMENTS=true
+REPO_DOWNLOAD_BASE_URL=https://raw.githubusercontent.com/dwhitfield6/STM32WB55_BLE_Garage_Intrusion_Sensor_Bugsnag/main
 ```
+
+`REPO_DOWNLOAD_BASE_URL` controls the prefix used for the clickable links that point at `Artifacts/*.zip`. Leave the default to serve files directly from GitHub’s raw view, or swap in your own CDN/hosting location.
 3. Watch the console:
 	- First `Bugsnag.notify(new Error('Test error'))` verifies connectivity
 	- Then the watchdog crash is thrown, caught, enriched, and uploaded
