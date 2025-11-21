@@ -4,24 +4,24 @@ Output file : C:\Users\pskkd\Documents\GitHub\STM32WB55_BLE_Garage_Intrusion_Sen
 
 signature       : CREDUMP
 version         : 1.0.0
-size_bytes      : 31520
-timestamp       : 1464411782
-timeUs          : 22877776
-systick         : 16815
-BuildNumber     : 1416
+size_bytes      : 31504
+timestamp       : 1466498387
+timeUs          : 12907812328
+systick         : 17391
+BuildNumber     : 1424
 ProjectName     : STM32WB55_BLE_Garage_Intrusion_Sensor
 Version         : 52.0b (Build: DEBUG)
 VersionShort    : 52.0b (DEBUG)
-BuildDate       : Nov 20 2025
-BuildTime       : 23:34:15
-Hash            : a4a5fb0f3665ce33d405c41a711bd31592e3b172
+BuildDate       : Nov 21 2025
+BuildTime       : 11:47:26
+Hash            : 9d373d4b144c39bac569f12409d3b503eb1e05e5
 GIT_Branch      : main
 SerialNumber    : SN:0123456789
 ModelNumber     : MN:00000001
-HardwareVersion : RevB
+HardwareVersion : RevB (GUIDE)
 ManufacturerName: M&R
 KernelVersion   : FreeRTOS V10.3.1
 crash_reason    : EXCEPTION. (MemManage) "../Core/Src/main.c" line 1781
-in_interrupt    : 505818234143180545
-in_critical     : 504692351415944969
+in_interrupt    : 74033420845450496
+in_critical     : 505811662809401093
 bytes_consumed : 976
