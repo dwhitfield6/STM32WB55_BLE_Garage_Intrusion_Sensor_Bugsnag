@@ -17,16 +17,20 @@ set "GDB_EXTRA_EX=%GDB_EXTRA_EX%"
 
 set "SCRIPT_DIR=%~dp0"
 
-REM Default paths
-set "DEFAULT_BUILD=%SCRIPT_DIR%build.elf"
-set "DEFAULT_CORE=%SCRIPT_DIR%coredump.elf"
-
-REM Resolve arguments or defaults
+REM Resolve arguments or auto-detect from directory
 set "BUILD_ELF=%~1"
-if "%BUILD_ELF%"=="" set "BUILD_ELF=%DEFAULT_BUILD%"
-
 set "CORE_ELF=%~2"
-if "%CORE_ELF%"=="" set "CORE_ELF=%DEFAULT_CORE%"
+
+REM If no arguments provided, auto-detect files
+if "%BUILD_ELF%"=="" (
+    REM Find STM32WB55_BLE_Garage_Intrusion_Sensor_Debug*.elf for build
+    for %%f in ("%SCRIPT_DIR%STM32WB55_BLE_Garage_Intrusion_Sensor_Debug*.elf") do set "BUILD_ELF=%%f"
+)
+
+if "%CORE_ELF%"=="" (
+    REM Find coredump_multithread*.elf for coredump
+    for %%f in ("%SCRIPT_DIR%coredump_multithread*.elf") do set "CORE_ELF=%%f"
+)
 
 if not exist "%BUILD_ELF%" (
     echo [ERROR] Build ELF not found: %BUILD_ELF%

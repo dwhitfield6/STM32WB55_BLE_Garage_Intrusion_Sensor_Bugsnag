@@ -19,8 +19,8 @@ NamedType BlockedState 0=NOT_BLOCKED 1=BLOCKED
 #
 # Events for BLE Connection Management.
 #
-131    BLE_Connection_Complete          ConnHandle=%u | Returns status=%u
-132    BLE_Disconnection_Complete       ConnHandle=%u Reason=%u
+131    BLE_Connection_Complete          ConnHandle=%u | Returns %u
+132    BLE_Disconnection_Complete       ConnHandle=%u, Reason=%u
 133    BLE_Connection_Update_Complete   ConnHandle=%u
 134    BLE_PHY_Update_Complete          ConnHandle=%u
 
@@ -35,8 +35,8 @@ NamedType BlockedState 0=NOT_BLOCKED 1=BLOCKED
 #
 # Events for BLE GATT Operations.
 #
-139    BLE_GATT_Indication              ConnHandle=%u AttrHandle=%u
-140    BLE_GATT_Write_Permit_Req        ConnHandle=%u AttrHandle=%u
+139    BLE_GATT_Indication              ConnHandle=%u, AttrHandle=%u
+140    BLE_GATT_Write_Permit_Req        ConnHandle=%u, AttrHandle=%u
 141    BLE_GATT_Notification_Complete   ConnHandle=%u
 
 #
@@ -64,8 +64,8 @@ NamedType BlockedState 0=NOT_BLOCKED 1=BLOCKED
 #
 # Events for GATT Attribute Operations.
 #
-152    BLE_GATT_Write_Callback          ConnHandle=%u AttrHandle=%u DataLen=%u
-153    BLE_GATT_Notify_Callback         ConnHandle=%u AttrHandle=%u
+152    BLE_GATT_Write_Callback          ConnHandle=%u, AttrHandle=%u, DataLen=%u
+153    BLE_GATT_Notify_Callback         ConnHandle=%u, AttrHandle=%u
 154    BLE_GATT_Confirm_Indication      ConnHandle=%u
 
 #
@@ -90,21 +90,21 @@ NamedType BlockedState 0=NOT_BLOCKED 1=BLOCKED
 #
 # Events for ATT Protocol.
 #
-162    BLE_ATT_Read_By_Type_Req         ConnHandle=%u StartHandle=%u EndHandle=%u
-163    BLE_ATT_MTU_Exchange             ConnHandle=%u ServerRXMTU=%u
-164    BLE_ATT_Read_Req                 ConnHandle=%u Len=%u
-165    BLE_ATT_Prepare_Write_Req        ConnHandle=%u AttrHandle=%u
+162    BLE_ATT_Read_By_Type_Req         ConnHandle=%u, StartHandle=%u, EndHandle=%u
+163    BLE_ATT_MTU_Exchange             ConnHandle=%u, ServerRXMTU=%u
+164    BLE_ATT_Read_Req                 ConnHandle=%u, Len=%u
+165    BLE_ATT_Prepare_Write_Req        ConnHandle=%u, AttrHandle=%u
 166    BLE_ATT_Execute_Write_Req        ConnHandle=%u
-167    BLE_ATT_Find_Info_Req            ConnHandle=%u StartHandle=%u EndHandle=%u
+167    BLE_ATT_Find_Info_Req            ConnHandle=%u, StartHandle=%u, EndHandle=%u
 
 #
 # Events for Service Discovery.
 #
 168    BLE_Discover_Services            ConnHandle=%u
-169    BLE_Discover_Characteristics     ConnHandle=%u StartHandle=%u EndHandle=%u
-170    BLE_Discover_Descriptors         ConnHandle=%u StartHandle=%u EndHandle=%u
-171    BLE_Service_Discovered           ConnHandle=%u UUID=%u
-172    BLE_Characteristic_Discovered    ConnHandle=%u UUID=%u Handle=%u
+169    BLE_Discover_Characteristics     ConnHandle=%u, StartHandle=%u, EndHandle=%u
+170    BLE_Discover_Descriptors         ConnHandle=%u, StartHandle=%u, EndHandle=%u
+171    BLE_Service_Discovered           ConnHandle=%u, UUID=%u
+172    BLE_Characteristic_Discovered    ConnHandle=%u, UUID=%u, Handle=%u
 
 #
 # Events for Power Management.
@@ -119,22 +119,22 @@ NamedType BlockedState 0=NOT_BLOCKED 1=BLOCKED
 #
 # Events for GATT Client Operations.
 #
-175    BLE_GATT_Client_Write            ConnHandle=%u AttrHandle=%u Length=%u
-176    BLE_GATT_Client_Notify_Received  ConnHandle=%u AttrHandle=%u Length=%u
-177    BLE_GATT_Enable_Notification     ConnHandle=%u DescHandle=%u
-178    BLE_GATT_Disable_Notification    ConnHandle=%u DescHandle=%u
-179    BLE_GATT_Read_Permit_Req         ConnHandle=%u AttrHandle=%u
-180    BLE_GATT_Read_Callback           ConnHandle=%u AttrHandle=%u
+175    BLE_GATT_Client_Write            ConnHandle=%u, AttrHandle=%u, Length=%u
+176    BLE_GATT_Client_Notify_Received  ConnHandle=%u, AttrHandle=%u, Length=%u
+177    BLE_GATT_Enable_Notification     ConnHandle=%u, DescHandle=%u
+178    BLE_GATT_Disable_Notification    ConnHandle=%u, DescHandle=%u
+179    BLE_GATT_Read_Permit_Req         ConnHandle=%u, AttrHandle=%u
+180    BLE_GATT_Read_Callback           ConnHandle=%u, AttrHandle=%u
 
 #
 # Events for Connection Updates.
 #
-181    BLE_Conn_Param_Update_Complete   ConnHandle=%u Interval=%u Latency=%u Timeout=%u
+181    BLE_Conn_Param_Update_Complete   ConnHandle=%u, Interval=%u, Latency=%u, Timeout=%u
 
 #
 # Events for Device Discovery.
 #
-182    BLE_Device_Found                 AddrType=%u RSSI=%d
+182    BLE_Device_Found                 AddrType=%u, RSSI=%d
 183    BLE_Device_Name_Found            NameLength=%u
 184    BLE_Target_Device_Found
 185    BLE_Device_Filter_Match
@@ -155,45 +155,45 @@ NamedType BlockedState 0=NOT_BLOCKED 1=BLOCKED
 #
 # Events for GATT Procedures.
 #
-195    BLE_GATT_Proc_Complete           ConnHandle=%u Error=%u
+195    BLE_GATT_Proc_Complete           ConnHandle=%u, Error=%u
 
 #
 # Events for Characteristic Discovery Results.
 #
 196    BLE_Char_Discovery_Complete      ConnHandle=%u
-197    BLE_Char_Found_Write             ConnHandle=%u CharHandle=%u
-198    BLE_Char_Found_Notify            ConnHandle=%u CharHandle=%u
+197    BLE_Char_Found_Write             ConnHandle=%u, CharHandle=%u
+198    BLE_Char_Found_Notify            ConnHandle=%u, CharHandle=%u
 199    BLE_Desc_Discovery_Complete      ConnHandle=%u
-200    BLE_Desc_Found_CCCD              ConnHandle=%u DescHandle=%u
+200    BLE_Desc_Found_CCCD              ConnHandle=%u, DescHandle=%u
 
 #
 # Events for Pairing/Security.
 #
 201    BLE_Pairing_Request              ConnHandle=%u
-202    BLE_GAP_Pairing_Complete         ConnHandle=%u Status=%u
-203    BLE_Encryption_Change            ConnHandle=%u Enabled=%u
+202    BLE_GAP_Pairing_Complete         ConnHandle=%u, Status=%u
+203    BLE_Encryption_Change            ConnHandle=%u, Enabled=%u
 
 #
 # Events for P2P Client State Machine.
 #
-204    BLE_P2P_State_Change             state=%AppBleConnStatus  ConnHandle=%u
-205    BLE_P2P_Service_Found            ConnHandle=%u StartHandle=0x%04X  EndHandle=0x%04X
-206    BLE_P2P_Char_Found               ConnHandle=%u CharUUID=0x%04X  Handle=0x%04X
-207    BLE_P2P_Notification_Status      ConnHandle=%u Enabled=%NotificationState
-208    BLE_P2P_Write_Command            ConnHandle=%u Length=%u
-209    BLE_P2P_Notification_Parsed      ConnHandle=%u Led=%u  Blocked=%BlockedState
+204    BLE_P2P_State_Change             state=%AppBleConnStatus,  ConnHandle=%u
+205    BLE_P2P_Service_Found            ConnHandle=%u, StartHandle=0x%04X,  EndHandle=0x%04X
+206    BLE_P2P_Char_Found               ConnHandle=%u, CharUUID=0x%04X,  Handle=0x%04X
+207    BLE_P2P_Notification_Status      ConnHandle=%u, Enabled=%NotificationState
+208    BLE_P2P_Write_Command            ConnHandle=%u, Length=%u,
+209    BLE_P2P_Notification_Parsed      ConnHandle=%u, Led=%u,  Blocked=%BlockedState
 
 #
 # Events for Heart Rate Service (HRS) data paths.
 #
-210    BLE_HRS_Update_Request           UUID=0x%04X  FirstByte=0x%02X
+210    BLE_HRS_Update_Request           UUID=0x%04X,  FirstByte=0x%02X
 211    BLE_HRS_BodySensor_Update        Location=%HRSBodyLocation
-212    BLE_HRS_Measurement_Update       PackedValue=0x%08X  Energy=%u  RRInfo=0x%08X  Len=%u
-213    BLE_HRS_Control_Write            ConnHandle=%u Opcode=0x%02X  Len=%u
-214    BLE_HRS_Control_Response         ConnHandle=%u Status=%u  ErrCode=0x%02X
-215    BLE_HRS_Notification_Toggle      ConnHandle=%u Enabled=%NotificationState
-216    BLE_HRS_Reboot_Request           Len=%u  Byte0=0x%02X
-217    BLE_Server_Status                state=%AppBleConnStatus  Notifications=%NotificationState
-218    BLE_P2P_Server_Timeout           state=%AppBleConnStatus
-219    BLE_P2P_Server_Recovered         state=%AppBleConnStatus
-220    BLE_HRS_Server_Tick              Blocked=%BlockedState  Result=%u
+212    BLE_HRS_Measurement_Update       PackedValue=0x%08X,  Energy=%u,  RRInfo=0x%08X,  Len=%u
+213    BLE_HRS_Control_Write            ConnHandle=%u, Opcode=0x%02X,  Len=%u
+214    BLE_HRS_Control_Response         ConnHandle=%u, Status=%u,  ErrCode=0x%02X
+215    BLE_HRS_Notification_Toggle      ConnHandle=%u, Enabled=%NotificationState
+216    BLE_HRS_Reboot_Request           Len=%u,  Byte0=0x%02X
+217    BLE_Server_Status                state=%AppBleConnStatus,  Notifications=%NotificationState
+218    BLE_P2P_Server_Timeout           state=%AppBleConnStatus,
+219    BLE_P2P_Server_Recovered         state=%AppBleConnStatus,
+220    BLE_HRS_Server_Tick              Blocked=%BlockedState,  Result=%u

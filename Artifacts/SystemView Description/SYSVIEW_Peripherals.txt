@@ -24,11 +24,11 @@ NamedType PulsePendulumState 0=PENDULUM_CLEAR 1=PENDULUM_BLOCKED
 NamedType BoolFlag 0=FALSE 1=TRUE
 NamedType HardwareVariant 0=HARDWARE_TX 1=HARDWARE_RX 2=HARDWARE_GUIDE 3=HARDWARE_INVALID
 NamedType GarageModel 0=GARAGE_GENIE 1=GARAGE_LIFTMASTER 2=GARAGE_OTHER
-NamedType TerminalStatus 0=FAILED 1=SUCCESS
+NamedType Status 0=FAILED 1=SUCCESS
 
 # Terminal / CLI
 128     Terminal_Command_Process         cmd=%s
-129     Terminal_Command_Complete        status=%TerminalStatus
+129     Terminal_Command_Complete        status=%Status
 130     Terminal_Character               character=%s
 
 # Watchdog
@@ -45,12 +45,12 @@ NamedType TerminalStatus 0=FAILED 1=SUCCESS
 135     IR_TX_Start                      channel=%u
 136     IR_TX_Stop                       channel=%u
 137     IR_RX_Init                       channels=0x%x
-138     IR_RX_Detect                     channel=%u  level=%u
+138     IR_RX_Detect                     channel=%u, level=%u
 139     Pulse_Density_Frame              frame=%u
-140     Pulse_Density_Detect             channel=%u  status=%u
+140     Pulse_Density_Detect             channel=%u, status=%u
 
 # Buzzer/RGB LED
-141     Buzzer_On                        freq=%u  duration=%u
+141     Buzzer_On                        freq=%u, duration=%u
 142     Buzzer_Off
 143     RGB_Set_Color                    r=%u  g=%u  b=%u
 
@@ -58,9 +58,9 @@ NamedType TerminalStatus 0=FAILED 1=SUCCESS
 144     Garage_State_Change              state=%BoolFlag
 
 # Flash/Storage
-145     Flash_Write_Start                addr=0x%x  bytes=%u
+145     Flash_Write_Start                addr=0x%x, bytes=%u | Returns %Status
 146     Flash_Write_Complete             addr=0x%x
-147     Flash_Erase_Start                addr=0x%x  pages=%u
+147     Flash_Erase_Start                addr=0x%x, pages=%u
 148     Flash_Erase_Complete             addr=0x%x
 149     Flash_Error                      error=0x%x
 
@@ -84,18 +84,18 @@ NamedType TerminalStatus 0=FAILED 1=SUCCESS
 158     System_Init
 
 # Error/Debug Extended
-159     HardFault_Entry                  pc=0x%x  lr=0x%x
+159     HardFault_Entry                  pc=0x%x, lr=0x%x
 160     MemManage_Fault                  addr=0x%x
 161     BusFault_Entry                   addr=0x%x
 162     UsageFault_Entry                 type=%u
 
 # Garage Instrumentation
-163     Garage_PWM_Update                freq=%u  duty=%u
-164     Garage_Blockage_Output           model=%GarageModel | blocked=%BoolFlag
+163     Garage_PWM_Update                freq=%u, duty=%u
+164     Garage_Blockage_Output           model=%GarageModel, blocked=%BoolFlag
 
 # Buzzer Instrumentation
-165     Buzzer_PWM_Update                freq=%u  duty=%u
-166     Buzzer_Song_State                state=%BuzzerSongState  clip=%u
+165     Buzzer_PWM_Update                freq=%u, duty=%u
+166     Buzzer_Song_State                state=%BuzzerSongState, clip=%u
 
 # Garage Model Sense
 167     Garage_Model_Sensed              model=%GarageModel
